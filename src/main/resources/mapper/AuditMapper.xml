@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sys.lunasysmanagement.mapper.AuditMapper">
+    <resultMap id="AuditMap" type="com.sys.lunasysmanagement.model.param.AuditDisplayParam">
+        <result column="email" jdbcType="VARCHAR" property="email"/>
+        <result column="type" jdbcType="INTEGER" property="type"/>
+        <result column="name" jdbcType="VARCHAR" property="name"/>
+        <result column="state" jdbcType="INTEGER" property="state"/>
+        <result column="audit_name" jdbcType="VARCHAR" property="auditName"/>
+        <result column="audit_time" jdbcType="VARCHAR" property="auditTime"/>
+        <result column="create_time" jdbcType="VARCHAR" property="createTime"/>
+    </resultMap>
+
+
+    <select id="auditSearch" resultMap="AuditMap">
+        select a.email,a.type,b.name,b.state,c.user_name audit_name,b.audit_time,a.create_time from user a left join
+        person_cert b on a.user_id = b.user_id left join sys_admin_user c on b.auditor_id = c.user_id where 1=1
+        <trim>
+            <if test="email!=null">and a.email = #{email}</if>
+            <if test="name!=null">and b.name = #{name}</if>
+            <if test="state!=null">and b.state = #{state}</if>
+            <if test="auditName!=null">and c.user_name = #{auditName}</if>
+            <if test="startAuditTime!=null">
+                and str_to_date(b.audit_time, '%Y-%m-%d') &gt;=
+                str_to_date(#{startAuditTime}, '%Y-%m-%d')
+            </if>
+            <if test="endAuditTime!=null">
+                and str_to_date(b.audit_time, '%Y-%m-%d') &lt;=
+                str_to_date(#{startAuditTime}, '%Y-%m-%d')
+
+            </if>
+            <if test="startTime!=null">
+                and str_to_date(a.create_time, '%Y-%m-%d') &gt;=
+                str_to_date(#{startTime}, '%Y-%m-%d')
+            </if>
+            <if test="endTime!=null">
+                and str_to_date(a.create_time, '%Y-%m-%d') &lt;=
+                str_to_date(#{startTime}, '%Y-%m-%d')
+            </if>
+            ORDER BY str_to_date(a.create_time, '%Y-%m-%d') desc
+            <if test="startItemNo != null">
+                <if test="pageSize != null">
+                    limit #{startItemNo},#{pageSize}
+                </if>
+            </if>
+        </trim>
+    </select>
+    <resultMap id="AuditDetailMap" type="com.sys.lunasysmanagement.model.param.AuditDetailParam">
+        <result column="type" jdbcType="INTEGER" property="type"/>
+        <result column="legal_person" jdbcType="VARCHAR" property="legalPerson"/>
+        <result column="email" jdbcType="VARCHAR" property="email"/>
+
+        <result column="person_name" jdbcType="VARCHAR" property="personName"/>
+        <result column="person_code" jdbcType="VARCHAR" property="personCode"/>
+        <result column="person_contact" jdbcType="VARCHAR" property="personContact"/>
+        <result column="person_mobile" jdbcType="VARCHAR" property="personMobile"/>
+        <result column="person_state" jdbcType="INTEGER" property="personState"/>
+        <result column="person_advice" jdbcType="VARCHAR" property="personAdvice"/>
+
+        <result column="org_name" jdbcType="VARCHAR" property="orgName"/>
+        <result column="org_code" jdbcType="VARCHAR" property="orgCode"/>
+        <result column="org_contact" jdbcType="VARCHAR" property="orgContact"/>
+        <result column="org_mobile" jdbcType="VARCHAR" property="orgMobile"/>
+        <result column="org_state" jdbcType="INTEGER" property="orgState"/>
+        <result column="org_advice" jdbcType="VARCHAR" property="orgAdvice"/>
+    </resultMap>
+    <select id="getDetail" resultMap="AuditDetailMap">
+            select a.email,a.type,b.name person_name,b.id_number person_code,b.name person_contact,b.mobile
+            person_mobile,b.state person_state,b.advice person_advice,c.org_name,c.credit_code org_code,c.contact
+            org_contact,c.mobile org_mobile,c.state org_state,c.advice org_advice
+            from user a left join person_cert b on a.user_id = b.user_id
+            left join org_cert c on a.user_id = c.user_id where a.user_id = #{userId};
+    </select>
+    <resultMap id="AuditLogMap" type="com.sys.lunasysmanagement.model.param.LogDisplayParam">
+        <result column="admin_name" jdbcType="VARCHAR" property="adminName"/>
+        <result column="create_time" jdbcType="VARCHAR" property="createTime"/>
+        <result column="content" jdbcType="VARCHAR" property="content"/>
+    </resultMap>
+    <select id="getLogs" resultMap="AuditLogMap">
+        select a.create_time,a.content,b.user_name admin_name from operate_log a left join sys_admin_user b on a.operator_id = b.user_id where a.user_id = #{userId} ORDER BY str_to_date(a.create_time, '%Y-%m-%d') desc
+    </select>
+
+    <update id="updateOrgAudit">
+        update org_cert set advice = #{advice},audit_time = #{auditTime},state = #{state} where user_id = #{userId};
+    </update>
+
+    <update id="updatePersonAudit">
+        update person_cert set advice = #{advice},audit_time = #{auditTime},state = #{state} where user_id = #{userId};
+    </update>
+
+    <select id="getTypeState" resultMap="AuditMap">
+        select state,type from user where user_id = #{userId};
+    </select>
+
+    <update id="updateOperateLog">
+        update operate_log set operator_id = #{operatorId},content = #{content},create_time = #{createTime} where user_id = #{userId};
+    </update>
+</mapper>

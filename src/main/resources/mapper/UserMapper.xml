@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sys.lunasysmanagement.mapper.UserMapper">
+    <resultMap id="UserMap" type="com.sys.lunasysmanagement.model.param.UserDisplayParam">
+        <result column="email" jdbcType="VARCHAR" property="email"/>
+        <result column="type" jdbcType="INTEGER" property="type"/>
+        <result column="name" jdbcType="VARCHAR" property="userName"/>
+        <result column="contact" jdbcType="VARCHAR" property="contact"/>
+        <result column="mobile" jdbcType="VARCHAR" property="mobile"/>
+        <result column="state" jdbcType="INTEGER" property="state"/>
+        <result column="tps" jdbcType="VARCHAR" property="tps"/>
+        <result column="storage" jdbcType="VARCHAR" property="storage"/>
+        <result column="create_time" jdbcType="VARCHAR" property="createTime"/>
+        <result column="total" jdbcType="INTEGER" property="total"/>
+    </resultMap>
+
+    <select id="searchAll" resultMap="UserMap">
+        <choose>
+            <when test="type == 0">
+                select a.email,a.type,b.org_name name,b.contact,b.mobile,a.state,c.tps,c.storage,a.create_time,(select count(1) from user) as total from
+                user a left join
+                org_cert
+                b
+                on a.user_id = b.user_id left join service c on b.user_id = c.user_id where a.type = #{type} and a.state
+                !=
+                2
+                <trim>
+                    <if test="email != null">and a.email =#{email}</if>
+                    <if test="userName != null">and b.org_name=#{userName}</if>
+                    <if test="state != null">and a.state=#{state}</if>
+                    <if test="startTime != null">
+                        <if test="endTime != null">and str_to_date(a.create_time, '%Y-%m-%d') BETWEEN
+                            str_to_date(#{startTime}, '%Y-%m-%d') AND str_to_date(#{endTime}, '%Y-%m-%d')
+                        </if>
+                    </if>
+                </trim>
+                ORDER BY str_to_date(create_time, '%Y-%m-%d') desc
+                <if test="startItemNo != null">
+                    <if test="pageSize != null">
+                        limit #{startItemNo},#{pageSize}
+                    </if>
+                </if>
+
+            </when>
+            <when test="type == 1">
+                select a.email,a.type,b.name,b.name contact,b.mobile,a.state,c.tps,c.storage,a.create_time,(select count(1) from user) as total from user a
+                left join
+                person_cert b
+                on a.user_id = b.user_id left join service c on b.user_id = c.user_id where a.type = #{type} and a.state
+                !=
+                2
+                <trim>
+                    <if test="email != null">and a.email =#{email}</if>
+                    <if test="userName != null">and b.name=#{userName}</if>
+                    <if test="state != null">and a.state=#{state}</if>
+                    <if test="startTime != null">
+                        <if test="endTime != null">and str_to_date(a.create_time, '%Y-%m-%d') BETWEEN
+                            str_to_date(#{startTime}, '%Y-%m-%d') AND str_to_date(#{endTime}, '%Y-%m-%d')
+                        </if>
+                    </if>
+                </trim>
+                ORDER BY str_to_date(create_time, '%Y-%m-%d') desc
+                <if test="startItemNo != null">
+                    <if test="pageSize != null">
+                        limit #{startItemNo},#{pageSize}
+                    </if>
+                </if>
+            </when>
+            <otherwise>select a.email,a.type,b.name,b.name contact,b.mobile,a.state,c.tps,c.storage,a.create_time,(select count(1) from user) as total from
+                user a left
+                join
+                person_cert b
+                on a.user_id = b.user_id left join service c on b.user_id = c.user_id where a.type = 1 and a.state !=
+                2
+                <trim>
+                    <if test="email != null">and a.email =#{email}</if>
+                    <if test="userName != null">and b.name=#{userName}</if>
+                    <if test="state != null">and a.state=#{state}</if>
+                    <if test="startTime != null">
+                        <if test="endTime != null">and str_to_date(a.create_time, '%Y-%m-%d') BETWEEN
+                            str_to_date(#{startTime}, '%Y-%m-%d') AND str_to_date(#{endTime}, '%Y-%m-%d')
+                        </if>
+                    </if>
+                </trim>
+                union
+                select a.email,a.type,b.org_name,b.contact,b.mobile,a.state,c.tps,c.storage,a.create_time,(select count(1) from user) as total from user a
+                left join
+                org_cert
+                b
+                on a.user_id = b.user_id left join service c on b.user_id = c.user_id where a.type = 0 and a.state !=
+                2
+                <trim>
+                    <if test="email != null">and a.email =#{email}</if>
+                    <if test="userName != null">and b.org_name=#{userName}</if>
+                    <if test="state != null">and a.state=#{state}</if>
+                    <if test="startTime != null">
+                        <if test="endTime != null">and str_to_date(a.create_time, '%Y-%m-%d') BETWEEN
+                            str_to_date(#{startTime}, '%Y-%m-%d') AND str_to_date(#{endTime}, '%Y-%m-%d')
+                        </if>
+                    </if>
+                </trim>
+                ORDER BY str_to_date(create_time, '%Y-%m-%d') desc
+                <if test="startItemNo != null">
+                    <if test="pageSize != null">
+                        limit #{startItemNo},#{pageSize}
+                    </if>
+                </if>
+            </otherwise>
+        </choose>
+
+    </select>
+    <update id="updateService">
+        update service
+        <trim prefix="set" suffixOverrides=",">
+            <if test="tps!=null">tps=#{tps},</if>
+            <if test="storage!=null">storage=#{storage},</if>
+        </trim>
+        where user_id = #{userId};
+    </update>
+
+    <!--逻辑删除仅适用于禁用用户-->
+    <update id="deleteUser">
+        update user set state = 2 where user_id = #{userId} and state = 1;
+    </update>
+
+    <insert id="insertLog">
+        INSERT INTO operate_log (user_id, operator_id,content,create_time) VALUES (#{userId},#{adminId},                    #{content},#{currentTime});
+
+    </insert>
+</mapper>
